@@ -1,0 +1,204 @@
+-----------------------------------------------------------------------------------------------------------------------------
+creating controller without controller class
+
+package com.cg.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.web.servlet.view.JstlView;
+
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = { "com.cg.app"})
+public class SpringConfig implements WebMvcConfigurer{
+	@Bean
+	public ViewResolver viewResolver() {
+		InternalResourceViewResolver irvr =  new InternalResourceViewResolver();
+		irvr.setViewClass(JstlView.class);
+		irvr.setPrefix("/WEB-INF/views/");
+		irvr.setSuffix(".jsp");
+		return irvr;
+	}
+	
+	 @Override
+	   public void addViewControllers(ViewControllerRegistry registry) {
+	      registry.addViewController("/home");
+	      registry.addViewController("/first");
+	   }
+	
+	@Override
+	public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+		configurer.enable();
+	}
+}
+-----------------------------------------------------------------------------------------------------------------------------
+spring mvc using java config
+package com.cg.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.ViewResolver;
+import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.web.servlet.view.JstlView;
+
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = { "com.cg.app"})
+public class SpringConfig implements WebMvcConfigurer{
+	@Bean
+	public ViewResolver viewResolver() {
+		InternalResourceViewResolver irvr =  new InternalResourceViewResolver();
+		irvr.setViewClass(JstlView.class);
+		irvr.setPrefix("/WEB-INF/views/");
+		irvr.setSuffix(".jsp");
+		return irvr;
+	}
+
+}
+-----------------------------------------------------------------------------------------------------------------------------
+alternative to web.xml
+
+import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
+
+public class HelloWorldInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+ 
+    @Override
+    protected Class<?>[] getRootConfigClasses() {
+        return new Class[] { SpringConfig.class };
+    }
+  
+    @Override
+    protected Class<?>[] getServletConfigClasses() {
+        return null;
+    }
+  
+    @Override
+    protected String[] getServletMappings() {
+        return new String[] { "/" };
+    }
+ 
+}
+
+-----------------------------------------------------------------------------------------------------------------------------
+spring configuration using xml (spring-servlet.xml)
+
+<context:component-scan base-package="com.baeldung.web.controller" />
+<mvc:annotation-driven />    
+ 
+<bean id="viewResolver"
+      class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/view/" />
+        <property name="suffix" value=".jsp" />
+    </bean>
+ 
+    <mvc:view-controller path="/" view-name="index" />
+ 
+</beans>
+
+-----------------------------------------------------------------------------------------------------------------------------
+error page in spring mvc
+package com.cg.app;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.ModelAndView;
+
+@Controller
+public class ErrorController {
+ 
+    @RequestMapping(value = "errors", method = RequestMethod.GET)
+    public ModelAndView renderErrorPage(HttpServletRequest httpRequest) {
+         
+        ModelAndView errorPage = new ModelAndView("errorPage");
+        String errorMsg = "";
+        int httpErrorCode = getErrorCode(httpRequest);
+ 
+        switch (httpErrorCode) {
+            case 400: {
+                errorMsg = "Http Error Code: 400. Bad Request";
+                break;
+            }
+            case 401: {
+                errorMsg = "Http Error Code: 401. Unauthorized";
+                break;
+            }
+            case 404: {
+                errorMsg = "Http Error Code: 404. Resource not found";
+                break;
+            }
+            case 500: {
+                errorMsg = "Http Error Code: 500. Internal Server Error";
+                break;
+            }
+        }
+        errorPage.addObject("errorMsg", errorMsg);
+        return errorPage;
+    }
+     
+    private int getErrorCode(HttpServletRequest httpRequest) {
+        return (Integer) httpRequest
+          .getAttribute("javax.servlet.error.status_code");
+    }
+}
+
+
+//web.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee https://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/spring/root-context.xml</param-value>
+	</context-param>
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<servlet>
+		<servlet-name>appServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>appServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+	<error-page>
+		<location>/errors</location>
+	</error-page>
+</web-app>
+
+
+//errorPage.jsp
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ page session="false"%>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>${errorMsg}</h1>
+</body>
+</html> 
